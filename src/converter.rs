@@ -339,52 +339,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 output.push('\n');
             }
 
-            if !trait_impls.is_empty() {
-                let user_impls: Vec<_> = trait_impls
-                    .iter()
-                    .filter(|impl_block| {
-                        !impl_block.is_synthetic && impl_block.blanket_impl.is_none()
-                    })
-                    .collect();
-
-                if !user_impls.is_empty() {
-                    let mut derives = Vec::new();
-                    let mut trait_with_methods = Vec::new();
-
-                    for impl_block in user_impls {
-                        if let Some(trait_ref) = &impl_block.trait_ {
-                            let methods = format_impl_methods(impl_block, crate_data);
-                            if methods.is_empty() {
-                                derives.push(trait_ref.path.as_str());
-                            } else {
-                                trait_with_methods.push((trait_ref, methods));
-                            }
-                        }
-                    }
-
-                    let public_derives: Vec<_> = derives
-                        .into_iter()
-                        .filter(|t| !is_compiler_internal_trait(t))
-                        .collect();
-
-                    if !public_derives.is_empty() {
-                        output.push_str("**Traits:** ");
-                        output.push_str(&public_derives.join(", "));
-                        output.push_str("\n\n");
-                    }
-
-                    if !trait_with_methods.is_empty() {
-                        output.push_str("**Trait Implementations:**\n\n");
-                        for (trait_ref, methods) in trait_with_methods {
-                            output.push_str(&format!("- **{}**\n", trait_ref.path));
-                            for line in methods.lines() {
-                                output.push_str(&format!("  {}\n", line));
-                            }
-                        }
-                        output.push('\n');
-                    }
-                }
-            }
+            output.push_str(&format_all_trait_implementations(&trait_impls, crate_data));
         }
         ItemEnum::Enum(e) => {
             output.push_str(&format!("## {}\n\n", name));
@@ -496,52 +451,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 output.push('\n');
             }
 
-            if !trait_impls.is_empty() {
-                let user_impls: Vec<_> = trait_impls
-                    .iter()
-                    .filter(|impl_block| {
-                        !impl_block.is_synthetic && impl_block.blanket_impl.is_none()
-                    })
-                    .collect();
-
-                if !user_impls.is_empty() {
-                    let mut derives = Vec::new();
-                    let mut trait_with_methods = Vec::new();
-
-                    for impl_block in user_impls {
-                        if let Some(trait_ref) = &impl_block.trait_ {
-                            let methods = format_impl_methods(impl_block, crate_data);
-                            if methods.is_empty() {
-                                derives.push(trait_ref.path.as_str());
-                            } else {
-                                trait_with_methods.push((trait_ref, methods));
-                            }
-                        }
-                    }
-
-                    let public_derives: Vec<_> = derives
-                        .into_iter()
-                        .filter(|t| !is_compiler_internal_trait(t))
-                        .collect();
-
-                    if !public_derives.is_empty() {
-                        output.push_str("**Traits:** ");
-                        output.push_str(&public_derives.join(", "));
-                        output.push_str("\n\n");
-                    }
-
-                    if !trait_with_methods.is_empty() {
-                        output.push_str("**Trait Implementations:**\n\n");
-                        for (trait_ref, methods) in trait_with_methods {
-                            output.push_str(&format!("- **{}**\n", trait_ref.path));
-                            for line in methods.lines() {
-                                output.push_str(&format!("  {}\n", line));
-                            }
-                        }
-                        output.push('\n');
-                    }
-                }
-            }
+            output.push_str(&format_all_trait_implementations(&trait_impls, crate_data));
         }
         ItemEnum::Function(f) => {
             output.push_str(&format!("## {}\n\n", name));
@@ -706,52 +616,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 output.push('\n');
             }
 
-            if !trait_impls.is_empty() {
-                let user_impls: Vec<_> = trait_impls
-                    .iter()
-                    .filter(|impl_block| {
-                        !impl_block.is_synthetic && impl_block.blanket_impl.is_none()
-                    })
-                    .collect();
-
-                if !user_impls.is_empty() {
-                    let mut derives = Vec::new();
-                    let mut trait_with_methods = Vec::new();
-
-                    for impl_block in user_impls {
-                        if let Some(trait_ref) = &impl_block.trait_ {
-                            let methods = format_impl_methods(impl_block, crate_data);
-                            if methods.is_empty() {
-                                derives.push(trait_ref.path.as_str());
-                            } else {
-                                trait_with_methods.push((trait_ref, methods));
-                            }
-                        }
-                    }
-
-                    let public_derives: Vec<_> = derives
-                        .into_iter()
-                        .filter(|t| !is_compiler_internal_trait(t))
-                        .collect();
-
-                    if !public_derives.is_empty() {
-                        output.push_str("**Traits:** ");
-                        output.push_str(&public_derives.join(", "));
-                        output.push_str("\n\n");
-                    }
-
-                    if !trait_with_methods.is_empty() {
-                        output.push_str("**Trait Implementations:**\n\n");
-                        for (trait_ref, methods) in trait_with_methods {
-                            output.push_str(&format!("- **{}**\n", trait_ref.path));
-                            for line in methods.lines() {
-                                output.push_str(&format!("  {}\n", line));
-                            }
-                        }
-                        output.push('\n');
-                    }
-                }
-            }
+            output.push_str(&format_all_trait_implementations(&trait_impls, crate_data));
         }
         ItemEnum::Macro(m) => {
             output.push_str(&format!("## {}\n\n", name));
@@ -1226,6 +1091,124 @@ fn generate_module_file(
             output.push_str(&section);
             output.push_str("\n\n");
         }
+    }
+
+    output
+}
+
+fn format_all_trait_implementations(
+    trait_impls: &[&rustdoc_types::Impl],
+    crate_data: &Crate,
+) -> String {
+    let mut output = String::new();
+    let mut explicit_impls = Vec::new();
+    let mut auto_impls = Vec::new();
+    let mut blanket_impls = Vec::new();
+
+    for impl_block in trait_impls {
+        if impl_block.is_synthetic {
+            auto_impls.push(*impl_block);
+        } else if impl_block.blanket_impl.is_some() {
+            blanket_impls.push(*impl_block);
+        } else {
+            explicit_impls.push(*impl_block);
+        }
+    }
+
+    if !explicit_impls.is_empty() {
+        output.push_str(&format_trait_impls_section(
+            &explicit_impls,
+            crate_data,
+            "Trait Implementations",
+        ));
+    }
+
+    if !auto_impls.is_empty() {
+        output.push_str("**Auto Trait Implementations**\n\n");
+        let mut auto_traits: Vec<_> = auto_impls
+            .iter()
+            .filter_map(|i| i.trait_.as_ref())
+            .collect();
+        auto_traits.sort_by(|a, b| a.path.cmp(&b.path));
+
+        output.push_str("This type automatically implements the following traits:\n\n");
+        for trait_ref in auto_traits {
+            output.push_str(&format!("- `{}`\n", trait_ref.path));
+        }
+        output.push('\n');
+    }
+
+    if !blanket_impls.is_empty() {
+        output.push_str(&format_trait_impls_section(
+            &blanket_impls,
+            crate_data,
+            "Blanket Implementations",
+        ));
+    }
+
+    output
+}
+
+fn format_trait_impls_section(
+    impls: &[&rustdoc_types::Impl],
+    crate_data: &Crate,
+    title: &str,
+) -> String {
+    let mut output = String::new();
+    let mut derives = Vec::new();
+    let mut trait_with_methods = Vec::new();
+
+    for impl_block in impls {
+        if let Some(trait_ref) = &impl_block.trait_ {
+            let methods = format_impl_methods(impl_block, crate_data);
+            if methods.is_empty() {
+                derives.push(trait_ref.path.as_str());
+            } else {
+                trait_with_methods.push((trait_ref, methods));
+            }
+        }
+    }
+
+    let public_derives: Vec<_> = derives
+        .into_iter()
+        .filter(|t| !is_compiler_internal_trait(t))
+        .collect();
+
+    if !public_derives.is_empty() {
+        if title == "Trait Implementations" {
+            output.push_str("**Traits:** ");
+            output.push_str(&public_derives.join(", "));
+            output.push_str("\n\n");
+        }
+    }
+    
+    let print_title = if title == "Trait Implementations" {
+        !trait_with_methods.is_empty()
+    } else {
+        !public_derives.is_empty() || !trait_with_methods.is_empty()
+    };
+
+    if print_title {
+         output.push_str(&format!("**{}**\n\n", title));
+         
+         if title != "Trait Implementations" {
+             for d in &public_derives {
+                 output.push_str(&format!("- `{}`\n", d));
+             }
+             if !public_derives.is_empty() {
+                 output.push('\n');
+             }
+         }
+    }
+
+    if !trait_with_methods.is_empty() {
+        for (trait_ref, methods) in trait_with_methods {
+            output.push_str(&format!("- **{}**\n", trait_ref.path));
+            for line in methods.lines() {
+                output.push_str(&format!("  {}\n", line));
+            }
+        }
+        output.push('\n');
     }
 
     output
